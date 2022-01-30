@@ -17,6 +17,7 @@ def load_dict():
     s = n.split('\n')
     words = [word.split('  ')[0] for word in s]
 
+    # filter all 5 letters, alphabetical, non-repetitive words
     j = 0
     for i in range(len(words)):
         if len(words[j]) != 5 or not words[j].isalpha() or max([ord(char) > ord('z') for char in words[j].lower()]):
@@ -119,15 +120,18 @@ def look_for_best_from_words(words, answer=None):
     if answer is None:
         answer = np.array([0, 0, 0, 0, 0])
 
+    # words list to chars array conv
     chars_list = []
     for word in words:
         chars_list.append([char for char in word.lower()])
-
     chars_list = np.array(chars_list)
+
+    # delete guessed letters
     for i_num, num in enumerate(answer):
         i = len(answer) - 1 - i_num
         if num == 2:
             chars_list = np.hstack((chars_list[:, :i], chars_list[:, i + 1:]))
+
     n_words = chars_list.shape[0]
     n_chars = chars_list.shape[1]
 
@@ -159,6 +163,7 @@ def look_for_best_from_words(words, answer=None):
         entropies[i_word] = -np.sum(p_s * np.log(p_s + 0.00000001))
         means[i_word] = np.sum(np.array(range(3 ** n_chars)) * p_s)
 
+    # tie-breaker 1: prefer one with more 1s and 2s as an option
     idxs = np.argsort(entropies)[::-1]
     entropies_sorted = np.sort(entropies)[::-1]
     i = 1
@@ -169,16 +174,14 @@ def look_for_best_from_words(words, answer=None):
             break
     if i > 1:
         means = means[idxs][:i]
-        # entropies_sorted = entropies_sorted[:i]
         chars_list = chars_list[:i]
-        # words = words[idxs]
-        # idxs = idxs[:i]
         j = 1
         while j < i:
             if means[j] == means[0]:
                 j += 1
             else:
                 break
+        # tie-breaker 2: prefer one with more common letters
         if j > 1:
             p = np.zeros(j)
             for k in range(j):
